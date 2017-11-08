@@ -5,30 +5,33 @@ using UnityEngine.UI;
 
 public class P1GameControllerScript : MonoBehaviour {
 
-	public GameObject cubePrefab;
-	Vector3 [,] cubePosition;
+	//airplane variables
+	public GameObject AirplanePreFab;
+	public static GameObject Airplane;
 	public static bool activeAirplane;
-	public static Vector3 airplaneSpawn;
-	static Vector3 airplaneLocation;
+	Vector3 airplaneSpawn;
+	Vector3 airplaneLocation;
+	int maxCargo;
+	int cargo;
+	public Text displayCargo;
+	int aX, aY;
+
+	//sky variables
+	public GameObject cubePrefab;
 	GameObject myCube;
-	public static float turnTime;
-	float turnSpeed;
-	public static bool moveEvents;
-	public static int cargo;
-	static bool cargoGain;
-	static Vector3 deliveryDepot;
-	static bool depoCargo;
-	static int score;
-	static bool cargoEvents;
-	static int maxCargo;
-	static KeyCode lastHitKey;
+	Vector3 [,] cubePosition;
+	Vector3 deliveryDepot;
 	int maxX;
 	int maxY;
 	int gridSize;
-	public static GameObject Airplane;
-	public GameObject AirplanePreFab;
-	public Text displayCargo;
+
+	//other variables
+	float turnTime;
+	float turnSpeed;
+	bool newTurn;
+	int score;
 	public Text displayScore;
+	KeyCode lastHitKey;
 
 
 	// Use this for initialization
@@ -37,14 +40,15 @@ public class P1GameControllerScript : MonoBehaviour {
 
 		turnTime = 1.5f;
 		turnSpeed = 1.5f;
-		moveEvents = false;
+		newTurn = false;
 		cargo = 0;
-		cargoEvents = false;
 		maxX = 16;
 		maxY = 9;
+		aX = 0;
+		aY = 8;
 
-		deliveryDepot = new Vector3 (15, 0);
 		cubePosition = new Vector3[maxX, maxY];
+		deliveryDepot = new Vector3 (15, 0);
 
 		for (int y = 0; y < maxY; y++) {
 			for (int x = 0; x < maxX; x++) {
@@ -54,21 +58,21 @@ public class P1GameControllerScript : MonoBehaviour {
 				//myCube.GetComponent<CubeBehaviour> ().x = x;
 				//myCube.GetComponent<CubeBehaviour> ().y = y;
 
-				if (deliveryDepot == new Vector3 (x, y)) {
+				if (deliveryDepot == new Vector3 (x,y)) {
 					myCube.GetComponent<Renderer> ().material.color = Color.black;
 				}
 			}
 		}
 
-		airplaneSpawn = cubePosition [0, 8];
+		deliveryDepot = cubePosition [15,0];
+		airplaneSpawn = cubePosition [0,8];
+		airplaneLocation = airplaneSpawn;
 		Airplane = Instantiate (AirplanePreFab, airplaneSpawn, Quaternion.identity);
 		Airplane.GetComponent<Renderer> ().material.color = Color.red;
-		airplaneLocation = airplaneSpawn;
 		print ("Airplane made!");
 
 	}
-
-	//click process if cube is airplane
+		
 	public static void AirplaneClick (){
 		//click on deactive airplane
 		if (!activeAirplane) {
@@ -85,44 +89,44 @@ public class P1GameControllerScript : MonoBehaviour {
 	}
 
 	void lastHitKeyMethod (){
-		if (Input.GetKeyDown (KeyCode.D)){
-			lastHitKey = KeyCode.D;
-		}
-		if (Input.GetKeyDown (KeyCode.S)){
-				lastHitKey = KeyCode.S;
-		}
-		if (Input.GetKeyDown (KeyCode.A)){
-					lastHitKey = KeyCode.A;
-		}
-		if (Input.GetKeyDown (KeyCode.W)){
-			lastHitKey = KeyCode.W;
+		foreach (KeyCode c in Input.inputString) {
+			lastHitKey = c;
 		}
 	}
-		
-	public static void CargoRules (){
+
+	void AirplaneMovement (){
+		if (activeAirplane && newTurn) { 
+			if (aX < maxX-1 && lastHitKey == KeyCode.D) {
+				aX++;
+			}
+			if (aX > 0 && lastHitKey == KeyCode.A) {
+				aX--;
+			}
+
+			if (aY > 0 && lastHitKey == KeyCode.S) {
+				aY--;
+			}
+			if (aY < maxY-1 && lastHitKey == KeyCode.W) {
+					aY++;
+			}
+			airplaneLocation = cubePosition [aX, aY];
+			Airplane.transform.position = airplaneLocation;
+			//so that airplane doesn't auto move after pressing x key once
+			lastHitKey = KeyCode.Keypad0;
+		}
+	}
+
+	void CargoRules (){
 		//game controls about cargo here
 		maxCargo = 90;
-		if (cargoEvents == true) {
-			if (airplaneLocation == airplaneSpawn) {
-				cargoGain = true;
-			} else {
-				cargoGain = false;
-			}
-			if (airplaneLocation == deliveryDepot) {
-				depoCargo = true;
-			} else {
-				depoCargo = false;
-			}
-			if (cargo < maxCargo && cargoGain == true) { 
+		if (newTurn) {
+			if (airplaneLocation == airplaneSpawn && cargo < maxCargo) {
 				cargo += 10;
 			}
-
-			if (depoCargo == true) {
-				score += cargo / 10;
+			if (airplaneLocation == deliveryDepot) {
+				score += cargo;
 				cargo = 0;
 			}
-
-			cargoEvents = false;
 		}
 	}
 
@@ -132,12 +136,13 @@ public class P1GameControllerScript : MonoBehaviour {
 		lastHitKeyMethod ();
 		if (Time.time > turnTime) {
 			turnTime += turnSpeed;
+			newTurn = true;
 			print ("New Turn");
-			cargoEvents = true;
 			CargoRules ();
+			AirplaneMovement ();
 			print ("last key:" + lastHitKey);
 			print ("Cargo:" + cargo + "....Score:" + score);
-
+			newTurn = false;
 		}
 
 		displayCargo.text = "Cargo:" + cargo;

@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class CubeBehaviour : MonoBehaviour {
 	//do I even need this script??
+	//yes I will need to update this for final and challenge by choice stuffs
 
 
 	//public int x, y;
